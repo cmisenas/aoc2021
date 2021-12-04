@@ -22,30 +22,13 @@ impl Board {
     }
 
     fn call_number(&mut self, number: String) {
-        let mut row_i = 0;
-        let mut col_j = 0;
-        self.content.iter().enumerate().for_each(|(i, row)| {
-            row.iter().enumerate().for_each(|(j, col)| {
-                if &number == col {
-                    row_i = i;
-                    col_j = j;
-                }
-            })
-        });
-
-        self.marked[row_i][col_j] = 1;
+        if let Some((row, col)) = get_row_col(self.content.clone(), number) {
+            self.marked[row][col] = 1;
+        }
     }
 
-    fn sum_not_marked_numbers(&self) -> usize {
-        self.content.iter().enumerate().fold(0, |acc1, (i, row)| {
-            acc1 + row.iter().enumerate().fold(0, |acc2, (j, col)| {
-                if self.marked[i][j] == 0 {
-                    col.parse::<usize>().unwrap() + acc2
-                } else {
-                    acc2
-                }
-            })
-        })
+    fn sum_unmarked_nums(&self) -> usize {
+        sum_unmarked_nums(self.marked.clone(), self.content.clone())
     }
 
     fn check_winner(&self) -> Option<Vec<String>> {
@@ -89,7 +72,7 @@ fn get_row_col(content: Vec<Vec<String>>, cell: String) -> Option<(usize, usize)
     coords
 }
 
-fn sum_not_marked_numbers(marked: Vec<Vec<usize>>, content: Vec<Vec<String>>) -> usize {
+fn sum_unmarked_nums(marked: Vec<Vec<usize>>, content: Vec<Vec<String>>) -> usize {
     content.iter().enumerate().fold(0, |acc1, (i, row)| {
         acc1 + row.iter().enumerate().fold(0, |acc2, (j, col)| {
             if marked[i][j] == 0 {
@@ -160,10 +143,8 @@ fn solve1(lines: Vec<Vec<String>>) -> usize {
             if let Some((row, col)) = get_row_col(board.to_vec(), num.to_string()) {
                 marked_boards[board_i][row][col] = 1;
                 if let Some(winner) = check_winner(marked_boards[board_i].clone(), board.to_vec()) {
-                    let sum =
-                        sum_not_marked_numbers(marked_boards[board_i].clone(), board.to_vec());
+                    let sum = sum_unmarked_nums(marked_boards[board_i].clone(), board.to_vec());
                     result = sum * num.parse::<usize>().unwrap();
-                    println!("{} * {} = {}", sum, num, result);
                     break 'outer;
                 }
             }
@@ -213,11 +194,9 @@ fn solve2(lines: Vec<Vec<String>>) -> usize {
             if let Some((row, col)) = get_row_col(board.to_vec(), num.to_string()) {
                 marked_boards[board_i][row][col] = 1;
                 if let Some(winner) = check_winner(marked_boards[board_i].clone(), board.to_vec()) {
-                    let sum =
-                        sum_not_marked_numbers(marked_boards[board_i].clone(), board.to_vec());
+                    let sum = sum_unmarked_nums(marked_boards[board_i].clone(), board.to_vec());
                     result = sum * num.parse::<usize>().unwrap();
                     winners.push(board_i);
-                    println!("WINNER: {}", result);
                 }
             }
         }
