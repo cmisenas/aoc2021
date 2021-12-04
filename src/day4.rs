@@ -179,6 +179,55 @@ fn solve2(lines: Vec<Vec<String>>) -> usize {
     let mut marked_boards: Vec<Vec<Vec<usize>>> = Vec::new();
     let mut result = 0;
 
+    &lines[1..].iter().for_each(|b| {
+        // let mut board = Board::new(
+        //     b.iter()
+        //         .map(|row| {
+        //             row.trim()
+        //                 .split(" ")
+        //                 .filter(|chr| chr != &"")
+        //                 .map(|chr| chr.to_string())
+        //                 .collect::<Vec<String>>()
+        //         })
+        //         .collect::<Vec<Vec<String>>>(),
+        // );
+        let mut board = b
+            .iter()
+            .map(|row| {
+                row.trim()
+                    .split(" ")
+                    .filter(|chr| chr != &"")
+                    .map(|chr| chr.to_string())
+                    .collect::<Vec<String>>()
+            })
+            .collect::<Vec<Vec<String>>>()
+            .clone();
+        let mut marked_board = vec![vec![0; board[0].len()]; board.len()];
+        boards.push(board);
+        marked_boards.push(marked_board);
+    });
+
+    'outer: for num in seq.iter() {
+        let mut winners: Vec<usize> = Vec::new();
+        for (board_i, board) in boards.iter().enumerate() {
+            if let Some((row, col)) = get_row_col(board.to_vec(), num.to_string()) {
+                marked_boards[board_i][row][col] = 1;
+                if let Some(winner) = check_winner(marked_boards[board_i].clone(), board.to_vec()) {
+                    let sum =
+                        sum_not_marked_numbers(marked_boards[board_i].clone(), board.to_vec());
+                    result = sum * num.parse::<usize>().unwrap();
+                    winners.push(board_i);
+                    println!("WINNER: {}", result);
+                }
+            }
+        }
+
+        for (offset, index) in winners.iter().enumerate() {
+            boards.remove(index - offset);
+            marked_boards.remove(index - offset);
+        }
+    }
+
     result
 }
 
