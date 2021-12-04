@@ -21,7 +21,7 @@ impl Board {
         }
     }
 
-    fn call_number(&mut self, number: String) {
+    fn mark_number(&mut self, number: String) {
         if let Some((row, col)) = get_row_col(self.content.clone(), number) {
             self.marked[row][col] = 1;
         }
@@ -96,57 +96,41 @@ pub fn main() {
             _ => None,
         })
         .collect::<Vec<Vec<String>>>();
+    let seq = &grouped_lines[0][0].split(",").collect::<Vec<&str>>();
+    let mut boards = &mut grouped_lines[1..]
+        .iter()
+        .map(|b| {
+            Board::new(
+                b.iter()
+                    .map(|row| {
+                        row.trim()
+                            .split_whitespace()
+                            .filter(|chr| chr != &"")
+                            .map(|chr| chr.to_string())
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            )
+        })
+        .collect::<Vec<Board>>();
 
-    let answer1 = solve1(grouped_lines.clone());
-    let answer2 = solve2(grouped_lines.clone());
+    let answer1 = solve1(seq.clone(), boards.clone());
+    let answer2 = solve2(seq.clone(), boards.clone());
     println!("Day 4 answers");
     println!("Answer 1 {}", answer1);
     println!("Answer 2 {}", answer2);
 }
 
-fn solve1(lines: Vec<Vec<String>>) -> usize {
-    let seq = &lines[0][0].split(",").collect::<Vec<&str>>();
-    let mut boards: Vec<Vec<Vec<String>>> = Vec::new();
-    let mut marked_boards: Vec<Vec<Vec<usize>>> = Vec::new();
+fn solve1(seq: Vec<&str>, mut boards: Vec<Board>) -> usize {
     let mut result = 0;
-
-    &lines[1..].iter().for_each(|b| {
-        // let mut board = Board::new(
-        //     b.iter()
-        //         .map(|row| {
-        //             row.trim()
-        //                 .split(" ")
-        //                 .filter(|chr| chr != &"")
-        //                 .map(|chr| chr.to_string())
-        //                 .collect::<Vec<String>>()
-        //         })
-        //         .collect::<Vec<Vec<String>>>(),
-        // );
-        let mut board = b
-            .iter()
-            .map(|row| {
-                row.trim()
-                    .split(" ")
-                    .filter(|chr| chr != &"")
-                    .map(|chr| chr.to_string())
-                    .collect::<Vec<String>>()
-            })
-            .collect::<Vec<Vec<String>>>()
-            .clone();
-        let mut marked_board = vec![vec![0; board[0].len()]; board.len()];
-        boards.push(board);
-        marked_boards.push(marked_board);
-    });
-
     'outer: for num in seq.iter() {
-        for (board_i, board) in boards.iter().enumerate() {
-            if let Some((row, col)) = get_row_col(board.to_vec(), num.to_string()) {
-                marked_boards[board_i][row][col] = 1;
-                if let Some(winner) = check_winner(marked_boards[board_i].clone(), board.to_vec()) {
-                    let sum = sum_unmarked_nums(marked_boards[board_i].clone(), board.to_vec());
-                    result = sum * num.parse::<usize>().unwrap();
-                    break 'outer;
-                }
+        let mut winners: Vec<usize> = Vec::new();
+        for (index, mut board) in boards.iter_mut().enumerate() {
+            board.mark_number(num.to_string());
+            if let Some(winner) = board.check_winner() {
+                let sum = board.sum_unmarked_nums();
+                result = sum * num.parse::<usize>().unwrap();
+                break 'outer;
             }
         }
     }
@@ -154,56 +138,21 @@ fn solve1(lines: Vec<Vec<String>>) -> usize {
     result
 }
 
-fn solve2(lines: Vec<Vec<String>>) -> usize {
-    let seq = &lines[0][0].split(",").collect::<Vec<&str>>();
-    let mut boards: Vec<Vec<Vec<String>>> = Vec::new();
-    let mut marked_boards: Vec<Vec<Vec<usize>>> = Vec::new();
+fn solve2(seq: Vec<&str>, mut boards: Vec<Board>) -> usize {
     let mut result = 0;
-
-    &lines[1..].iter().for_each(|b| {
-        // let mut board = Board::new(
-        //     b.iter()
-        //         .map(|row| {
-        //             row.trim()
-        //                 .split(" ")
-        //                 .filter(|chr| chr != &"")
-        //                 .map(|chr| chr.to_string())
-        //                 .collect::<Vec<String>>()
-        //         })
-        //         .collect::<Vec<Vec<String>>>(),
-        // );
-        let mut board = b
-            .iter()
-            .map(|row| {
-                row.trim()
-                    .split(" ")
-                    .filter(|chr| chr != &"")
-                    .map(|chr| chr.to_string())
-                    .collect::<Vec<String>>()
-            })
-            .collect::<Vec<Vec<String>>>()
-            .clone();
-        let mut marked_board = vec![vec![0; board[0].len()]; board.len()];
-        boards.push(board);
-        marked_boards.push(marked_board);
-    });
-
     'outer: for num in seq.iter() {
         let mut winners: Vec<usize> = Vec::new();
-        for (board_i, board) in boards.iter().enumerate() {
-            if let Some((row, col)) = get_row_col(board.to_vec(), num.to_string()) {
-                marked_boards[board_i][row][col] = 1;
-                if let Some(winner) = check_winner(marked_boards[board_i].clone(), board.to_vec()) {
-                    let sum = sum_unmarked_nums(marked_boards[board_i].clone(), board.to_vec());
-                    result = sum * num.parse::<usize>().unwrap();
-                    winners.push(board_i);
-                }
+        for (index, mut board) in boards.iter_mut().enumerate() {
+            board.mark_number(num.to_string());
+            if let Some(winner) = board.check_winner() {
+                let sum = board.sum_unmarked_nums();
+                result = sum * num.parse::<usize>().unwrap();
+                winners.push(index);
             }
         }
 
         for (offset, index) in winners.iter().enumerate() {
             boards.remove(index - offset);
-            marked_boards.remove(index - offset);
         }
     }
 
