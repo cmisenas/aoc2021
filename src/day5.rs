@@ -17,25 +17,21 @@ impl SeaFloor {
     }
 
     fn mark_line(&mut self, start: &Coordinate, end: &Coordinate) {
-        let x1 = start.x;
-        let x2 = end.x;
-        let y1 = start.y;
-        let y2 = end.y;
-        if is_horizontal_line(start, end) {
-            let mut start_y = if y1 < y2 { y1 } else { y2 };
-            let end_y = if y1 > y2 { y1 } else { y2 };
+        if start.is_horizontal_to(end) {
+            let mut start_y = if start.y < end.y { start.y } else { end.y };
+            let end_y = if start.y > end.y { start.y } else { end.y };
             while start_y <= end_y {
-                self.points[start_y][x1] += 1;
+                self.points[start_y][start.x] += 1;
                 start_y += 1;
             }
-        } else if is_vertical_line(start, end) {
-            let mut start_x = if x1 < x2 { x1 } else { x2 };
-            let end_x = if x1 > x2 { x1 } else { x2 };
+        } else if start.is_vertical_to(end) {
+            let mut start_x = if start.x < end.x { start.x } else { end.x };
+            let end_x = if start.x > end.x { start.x } else { end.x };
             while start_x <= end_x {
-                self.points[y1][start_x] += 1;
+                self.points[start.y][start_x] += 1;
                 start_x += 1;
             }
-        } else if is_diagonal_line(start, end) {
+        } else if start.is_diagonal_to(end) {
             let mut start_x = start.x;
             let mut start_y = start.y;
             let x_diff: i32 = if start_x > end.x { -1 } else { 1 };
@@ -73,18 +69,18 @@ impl Coordinate {
             y: coord[1],
         }
     }
-}
 
-fn is_horizontal_line(start: &Coordinate, end: &Coordinate) -> bool {
-    start.x == end.x
-}
+    fn is_horizontal_to(&self, end: &Coordinate) -> bool {
+        self.x == end.x
+    }
 
-fn is_vertical_line(start: &Coordinate, end: &Coordinate) -> bool {
-    start.y == end.y
-}
+    fn is_vertical_to(&self, end: &Coordinate) -> bool {
+        self.y == end.y
+    }
 
-fn is_diagonal_line(start: &Coordinate, end: &Coordinate) -> bool {
-    (start.x as i32 - end.x as i32).abs() == (start.y as i32 - end.y as i32).abs()
+    fn is_diagonal_to(&self, end: &Coordinate) -> bool {
+        (self.x as i32 - end.x as i32).abs() == (self.y as i32 - end.y as i32).abs()
+    }
 }
 
 pub fn main() {
@@ -109,7 +105,7 @@ pub fn main() {
 fn solve1(lines: &Vec<(Coordinate, Coordinate)>) -> u32 {
     let mut sea = SeaFloor::new();
     for line in lines.iter() {
-        if is_horizontal_line(&line.0, &line.1) || is_vertical_line(&line.0, &line.1) {
+        if line.0.is_horizontal_to(&line.1) || line.0.is_vertical_to(&line.1) {
             sea.mark_line(&line.0, &line.1);
         }
     }
@@ -123,9 +119,9 @@ fn solve1(lines: &Vec<(Coordinate, Coordinate)>) -> u32 {
 fn solve2(lines: &Vec<(Coordinate, Coordinate)>) -> u32 {
     let mut sea = SeaFloor::new();
     for line in lines.iter() {
-        if is_horizontal_line(&line.0, &line.1)
-            || is_vertical_line(&line.0, &line.1)
-            || is_diagonal_line(&line.0, &line.1)
+        if line.0.is_horizontal_to(&line.1)
+            || line.0.is_vertical_to(&line.1)
+            || line.0.is_diagonal_to(&line.1)
         {
             sea.mark_line(&line.0, &line.1);
         }
