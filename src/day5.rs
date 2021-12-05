@@ -21,19 +21,32 @@ impl SeaFloor {
         let x2 = end.x;
         let y1 = start.y;
         let y2 = end.y;
-        if x1 == x2 {
+        if is_horizontal_line(start, end) {
             let mut start_y = if y1 < y2 { y1 } else { y2 };
             let end_y = if y1 > y2 { y1 } else { y2 };
             while start_y <= end_y {
                 self.points[start_y][x1] += 1;
                 start_y += 1;
             }
-        } else if y1 == y2 {
+        } else if is_vertical_line(start, end) {
             let mut start_x = if x1 < x2 { x1 } else { x2 };
             let end_x = if x1 > x2 { x1 } else { x2 };
             while start_x <= end_x {
                 self.points[y1][start_x] += 1;
                 start_x += 1;
+            }
+        } else if is_diagonal_line(start, end) {
+            let mut start_x = start.x;
+            let mut start_y = start.y;
+            let x_diff: i32 = if start_x > end.x { -1 } else { 1 };
+            let y_diff: i32 = if start_y > end.y { -1 } else { 1 };
+            loop {
+                self.points[start_y][start_x] += 1;
+                if start_x == end.x {
+                    break;
+                }
+                start_x = (start_x as i32 + x_diff) as usize;
+                start_y = (start_y as i32 + y_diff) as usize;
             }
         }
     }
@@ -70,6 +83,10 @@ fn is_vertical_line(start: &Coordinate, end: &Coordinate) -> bool {
     start.y == end.y
 }
 
+fn is_diagonal_line(start: &Coordinate, end: &Coordinate) -> bool {
+    (start.x as i32 - end.x as i32).abs() == (start.y as i32 - end.y as i32).abs()
+}
+
 pub fn main() {
     let lines = read_lines_as_str("./day5.input");
     let parsed_lines = lines
@@ -97,16 +114,27 @@ fn solve1(lines: &Vec<(Coordinate, Coordinate)>) -> u32 {
         }
     }
 
-    let result = sea.points.iter().fold(0, |acc1, row| {
-        acc1 + row
-            .iter()
-            .fold(0, |acc2, col| if col >= &2 { acc2 + 1 } else { acc2 })
-    });
-    result
+    sea.points
+        .concat()
+        .iter()
+        .fold(0, |acc, cell| if cell >= &2 { acc + 1 } else { acc })
 }
 
 fn solve2(lines: &Vec<(Coordinate, Coordinate)>) -> u32 {
-    0
+    let mut sea = SeaFloor::new();
+    for line in lines.iter() {
+        if is_horizontal_line(&line.0, &line.1)
+            || is_vertical_line(&line.0, &line.1)
+            || is_diagonal_line(&line.0, &line.1)
+        {
+            sea.mark_line(&line.0, &line.1);
+        }
+    }
+
+    sea.points
+        .concat()
+        .iter()
+        .fold(0, |acc, cell| if cell >= &2 { acc + 1 } else { acc })
 }
 
 fn read_lines_as_str<P>(filename: P) -> Vec<String>
