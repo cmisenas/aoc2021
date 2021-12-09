@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -84,8 +83,8 @@ fn solve2(points: Vec<Vec<u32>>) -> usize {
             //    .fold(0, |acc, (x, y)| acc + points[*y][*x])
         })
         .collect();
-    basin_scores.sort_by(|a, b| b.cmp(a));
 
+    basin_scores.sort_by(|a, b| b.cmp(a));
     basin_scores.iter().take(3).product::<usize>()
 }
 
@@ -94,19 +93,17 @@ fn dfs(
     mut visited: HashSet<(usize, usize)>,
     start: (usize, usize),
 ) -> HashSet<(usize, usize)> {
-    let mut visited_pts = HashSet::new();
     visited.insert(start);
 
     // Left
     if start.0 > 0
         && points[start.1][start.0 - 1] != 9
         && !visited.contains(&(start.0 - 1, start.1))
-        && !visited_pts.contains(&(start.0 - 1, start.1))
     {
         let left = (start.0 - 1, start.1);
         visited.insert(left);
         for result in dfs(points, visited.clone(), left).iter() {
-            visited_pts.insert(*result);
+            visited.insert(*result);
         }
     }
 
@@ -114,12 +111,11 @@ fn dfs(
     if start.0 < points[0].len() - 1
         && points[start.1][start.0 + 1] != 9
         && !visited.contains(&(start.0 + 1, start.1))
-        && !visited_pts.contains(&(start.0 + 1, start.1))
     {
         let right = (start.0 + 1, start.1);
         visited.insert(right);
         for result in dfs(points, visited.clone(), right).iter() {
-            visited_pts.insert(*result);
+            visited.insert(*result);
         }
     }
 
@@ -127,12 +123,11 @@ fn dfs(
     if start.1 > 0
         && points[start.1 - 1][start.0] != 9
         && !visited.contains(&(start.0, start.1 - 1))
-        && !visited_pts.contains(&(start.0, start.1 - 1))
     {
         let up = (start.0, start.1 - 1);
         visited.insert(up);
         for result in dfs(points, visited.clone(), up).iter() {
-            visited_pts.insert(*result);
+            visited.insert(*result);
         }
     }
 
@@ -140,17 +135,12 @@ fn dfs(
     if start.1 < points.len() - 1
         && points[start.1 + 1][start.0] != 9
         && !visited.contains(&(start.0, start.1 + 1))
-        && !visited_pts.contains(&(start.0, start.1 + 1))
     {
         let down = (start.0, start.1 + 1);
         visited.insert(down);
         for result in dfs(points, visited.clone(), down).iter() {
-            visited_pts.insert(*result);
+            visited.insert(*result);
         }
-    }
-
-    for to_add in visited_pts.iter() {
-        visited.insert(*to_add);
     }
 
     visited.clone()
@@ -164,16 +154,5 @@ where
     let buf = io::BufReader::new(file);
     buf.lines()
         .map(|l| l.expect("Could not parse line"))
-        .collect()
-}
-
-fn read_lines_as_int<P>(filename: P) -> Vec<u32>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename).expect("no such file");
-    let buf = io::BufReader::new(file);
-    buf.lines()
-        .map(|l| l.expect("Could not parse line").parse::<u32>().unwrap())
         .collect()
 }
