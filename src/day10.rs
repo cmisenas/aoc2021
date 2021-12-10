@@ -69,9 +69,9 @@ fn solve2(mut lines: Vec<Vec<String>>) -> usize {
     SCORES.insert("}".to_string(), 3);
     SCORES.insert(">".to_string(), 4);
 
-    let incomplete_lines: Vec<&Vec<String>> = lines
+    let mut scores: Vec<usize> = lines
         .iter()
-        .filter(|line| {
+        .filter_map(|line| {
             let mut heap: Vec<String> = Vec::new();
             let mut corrupt = false;
             for brace in line.iter() {
@@ -87,22 +87,13 @@ fn solve2(mut lines: Vec<Vec<String>>) -> usize {
                     }
                 }
             }
-            !corrupt
-        })
-        .collect();
-
-    let mut scores: Vec<usize> = incomplete_lines
-        .iter()
-        .map(|inc_line| {
-            let mut score = 0;
-            let mut heap: Vec<String> = Vec::new();
-            for brace in inc_line.iter() {
-                if OPEN_BRACES.contains(&brace.as_str()) {
-                    heap.push(brace.to_string());
-                } else {
-                    let last_char = heap.pop().unwrap();
-                }
+            match corrupt {
+                true => None,
+                _ => Some(heap),
             }
+        })
+        .map(|mut heap| {
+            let mut score = 0;
             while heap.len() > 0 {
                 let last_char = heap.pop().unwrap();
                 let match_brace = OPEN_MATCHES.get(&last_char).unwrap();
