@@ -93,14 +93,9 @@ fn solve2(mut lines: Vec<Vec<String>>) -> usize {
             }
         })
         .map(|mut heap| {
-            let mut score = 0;
-            while heap.len() > 0 {
-                let last_char = heap.pop().unwrap();
-                let match_brace = OPEN_MATCHES.get(&last_char).unwrap();
-                score = (score * 5) + SCORES.get(match_brace).unwrap();
-            }
-
-            score
+            heap.iter().rev().fold(0, |acc, brace| {
+                (acc * 5) + SCORES.get(OPEN_MATCHES.get(brace).unwrap()).unwrap()
+            })
         })
         .collect();
     scores.sort();
