@@ -14,23 +14,22 @@ pub fn main() {
     println!("Answer 2 {}", answer2);
 }
 
-fn solve1(mut fishies: Vec<i32>) -> usize {
-    solve(fishies.clone(), 80)
+fn solve1(fishies: Vec<i32>) -> usize {
+    solve(fishies, 80)
 }
 
-fn solve2(mut fishies: Vec<i32>) -> usize {
-    solve(fishies.clone(), 256)
+fn solve2(fishies: Vec<i32>) -> usize {
+    solve(fishies, 256)
 }
 
-fn solve(mut fishies: Vec<i32>, days: i32) -> usize {
-    let mut zeroes = 0;
+fn solve(fishies: Vec<i32>, days: i32) -> usize {
     let mut inv_fish = vec![0; 9];
 
     for fish in fishies.iter() {
         inv_fish[*fish as usize] += 1;
     }
 
-    for day in 0..days {
+    for _ in 0..days {
         let temp_0 = inv_fish[0];
 
         for i in 1..9 {

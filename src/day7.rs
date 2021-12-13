@@ -21,7 +21,6 @@ fn solve1(mut crabs: Vec<i32>) -> usize {
     let mut costs = (lowest..highest + 1)
         .map(|pos| {
             let cost = calc_cost(crabs.clone(), pos);
-            println!("{} costs {}", pos, cost);
             (pos, cost)
         })
         .collect::<Vec<(usize, usize)>>();
@@ -45,7 +44,6 @@ fn solve2(mut crabs: Vec<i32>) -> usize {
     let mut costs = (lowest..highest + 1)
         .map(|pos| {
             let cost = calc_cost_growth(crabs.clone(), pos);
-            println!("{} costs {}", pos, cost);
             (pos, cost)
         })
         .collect::<Vec<(usize, usize)>>();

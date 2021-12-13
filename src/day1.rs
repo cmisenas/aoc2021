@@ -11,26 +11,25 @@ pub fn main() {
 }
 
 fn solve1(lines: &[f32]) -> u32 {
-    let mut inc = 0;
-    for (i, depth) in lines.iter().skip(1).enumerate() {
-        let prev_depth = lines[i];
-        if depth > &prev_depth {
-            inc += 1;
-        }
-    }
-    inc
+    lines
+        .iter()
+        .skip(1)
+        .enumerate()
+        .fold(0, |acc, (i, depth)| match depth > &lines[i] {
+            true => acc + 1,
+            _ => acc,
+        })
 }
 
 fn solve2(lines: &[f32]) -> u32 {
-    let mut inc = 0;
-    for (i, depth) in lines.iter().skip(3).enumerate() {
+    lines.iter().skip(3).enumerate().fold(0, |acc, (i, depth)| {
         let prev_depth = lines[i] + lines[i + 1] + lines[i + 2];
         let curr_depth = lines[i + 1] + lines[i + 2] + depth;
-        if curr_depth > prev_depth {
-            inc += 1;
+        match curr_depth > prev_depth {
+            true => acc + 1,
+            _ => acc,
         }
-    }
-    inc
+    })
 }
 
 fn read_lines_as_int<P>(filename: P) -> Vec<f32>

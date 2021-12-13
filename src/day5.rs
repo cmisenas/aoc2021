@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -55,10 +53,6 @@ struct Coordinate {
 }
 
 impl Coordinate {
-    fn new(x: usize, y: usize) -> Coordinate {
-        Coordinate { x, y }
-    }
-
     fn from_str(xy: String) -> Coordinate {
         let coord = xy
             .split(",")

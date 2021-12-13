@@ -1,22 +1,7 @@
-extern crate regex;
-
-use regex::Regex;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
-
-struct Signal {
-    segments: String,
-    value: usize,
-}
-
-impl Signal {
-    fn new(segments: String, value: usize) -> Signal {
-        Signal { segments, value }
-    }
-}
 
 pub fn main() {
     let signals = read_lines_as_str("./day8.input")
@@ -43,7 +28,7 @@ pub fn main() {
     println!("Answer 2 {}", answer2);
 }
 
-fn solve1(mut signals: Vec<Vec<String>>) -> usize {
+fn solve1(signals: Vec<Vec<String>>) -> usize {
     let mut total = 0;
     let mut index = 1;
     loop {
@@ -63,7 +48,7 @@ fn solve1(mut signals: Vec<Vec<String>>) -> usize {
     total
 }
 
-fn solve2(mut signals: Vec<Vec<String>>) -> usize {
+fn solve2(signals: Vec<Vec<String>>) -> usize {
     let mut total = 0;
     let mut index = 1;
     loop {
@@ -84,26 +69,24 @@ fn solve2(mut signals: Vec<Vec<String>>) -> usize {
     total
 }
 
-fn decode_mixed_signal(mut signals: Vec<String>) -> HashMap<String, usize> {
+fn decode_mixed_signal(signals: Vec<String>) -> HashMap<String, usize> {
     let mut decoded = HashMap::new();
     let mut one = "";
     let mut four = "";
     let mut six = "";
 
-    /**
-     * Figure out the code first of the following
-     * 1, 4, 7, 8 are known
-     *
-     * 6 segments
-     * - 9 - has all segments of 4 and 1
-     * - 6 - does not have all segments of 1
-     * - 0 - does not have all segments of 4 but all segments of 1
-     *
-     * 5 segments
-     * - 3 - will have all segments of 1
-     * - 5 - will have all segments of 6
-     * - 2 - remaining
-     */
+    // Figure out the code first of the following
+    // 1, 4, 7, 8 are known
+    //
+    // 6 segments
+    // - 9 - has all segments of 4 and 1
+    // - 6 - does not have all segments of 1
+    // - 0 - does not have all segments of 4 but all segments of 1
+    //
+    // 5 segments
+    // - 3 - will have all segments of 1
+    // - 5 - will have all segments of 6
+    // - 2 - remaining
     for signal in signals.iter() {
         if signal.len() == 2 {
             one = signal;

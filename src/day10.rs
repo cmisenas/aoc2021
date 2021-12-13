@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -16,32 +15,17 @@ pub fn main() {
 }
 
 fn solve1(lines: Vec<Vec<String>>) -> u32 {
-    // Use Vec as Heap
-    let mut OPEN_BRACES = vec!["(", "[", "{", "<"];
-    let mut CLOSE_BRACES = vec![")", "]", "}", ">"];
-    let mut MATCHES = HashMap::new();
-    MATCHES.insert(")".to_string(), "(".to_string());
-    MATCHES.insert("]".to_string(), "[".to_string());
-    MATCHES.insert("}".to_string(), "{".to_string());
-    MATCHES.insert(">".to_string(), "<".to_string());
-    let mut SCORES = HashMap::new();
-    SCORES.insert(")".to_string(), 3);
-    SCORES.insert("]".to_string(), 57);
-    SCORES.insert("}".to_string(), 1197);
-    SCORES.insert(">".to_string(), 25137);
     let mut total_score = 0;
 
     for line in lines.iter() {
         let mut heap: Vec<String> = Vec::new();
         for brace in line.iter() {
-            if OPEN_BRACES.contains(&brace.as_str()) {
+            if is_open_brace(brace) {
                 heap.push(brace.to_string());
             } else {
                 let last_char = heap.pop().unwrap();
-                if MATCHES.get(brace).unwrap() != &last_char
-                    && CLOSE_BRACES.contains(&brace.as_str())
-                {
-                    total_score += SCORES.get(brace).unwrap();
+                if get_open_brace_match(brace) != &last_char && is_close_brace(brace) {
+                    total_score += get_first_part_score(brace);
                 }
             }
         }
@@ -49,39 +33,66 @@ fn solve1(lines: Vec<Vec<String>>) -> u32 {
     total_score
 }
 
-fn solve2(mut lines: Vec<Vec<String>>) -> usize {
-    // Use Vec as Heap
-    let mut OPEN_BRACES = vec!["(", "[", "{", "<"];
-    let mut CLOSE_BRACES = vec![")", "]", "}", ">"];
-    let mut CLOSE_MATCHES = HashMap::new();
-    CLOSE_MATCHES.insert(")".to_string(), "(".to_string());
-    CLOSE_MATCHES.insert("]".to_string(), "[".to_string());
-    CLOSE_MATCHES.insert("}".to_string(), "{".to_string());
-    CLOSE_MATCHES.insert(">".to_string(), "<".to_string());
-    let mut OPEN_MATCHES = HashMap::new();
-    OPEN_MATCHES.insert("(".to_string(), ")".to_string());
-    OPEN_MATCHES.insert("[".to_string(), "]".to_string());
-    OPEN_MATCHES.insert("{".to_string(), "}".to_string());
-    OPEN_MATCHES.insert("<".to_string(), ">".to_string());
-    let mut SCORES = HashMap::new();
-    SCORES.insert(")".to_string(), 1);
-    SCORES.insert("]".to_string(), 2);
-    SCORES.insert("}".to_string(), 3);
-    SCORES.insert(">".to_string(), 4);
+fn is_open_brace(brace: &str) -> bool {
+    vec!["(", "[", "{", "<"].contains(&brace)
+}
 
+fn is_close_brace(brace: &str) -> bool {
+    vec![")", "]", "}", ">"].contains(&brace)
+}
+
+fn get_first_part_score(brace: &str) -> u32 {
+    match brace {
+        ")" => 3,
+        "]" => 57,
+        "}" => 1197,
+        ">" => 25137,
+        _ => panic!("poop"),
+    }
+}
+
+fn get_second_part_score(brace: &str) -> usize {
+    match brace {
+        ")" => 1,
+        "]" => 2,
+        "}" => 3,
+        ">" => 4,
+        _ => panic!("poop"),
+    }
+}
+
+fn get_open_brace_match(brace: &str) -> &str {
+    match brace {
+        ")" => "(",
+        "]" => "[",
+        "}" => "{",
+        ">" => "<",
+        _ => panic!("poop"),
+    }
+}
+
+fn get_close_brace_match(brace: &str) -> &str {
+    match brace {
+        "(" => ")",
+        "[" => "]",
+        "{" => "}",
+        "<" => ">",
+        _ => panic!("poop"),
+    }
+}
+
+fn solve2(lines: Vec<Vec<String>>) -> usize {
     let mut scores: Vec<usize> = lines
         .iter()
         .filter_map(|line| {
             let mut heap: Vec<String> = Vec::new();
             let mut corrupt = false;
             for brace in line.iter() {
-                if OPEN_BRACES.contains(&brace.as_str()) {
+                if is_open_brace(brace) {
                     heap.push(brace.to_string());
                 } else {
                     let last_char = heap.pop().unwrap();
-                    if CLOSE_MATCHES.get(brace).unwrap() != &last_char
-                        && CLOSE_BRACES.contains(&brace.as_str())
-                    {
+                    if get_open_brace_match(brace) != &last_char && is_close_brace(brace) {
                         corrupt = true;
                         break;
                     }
@@ -92,9 +103,9 @@ fn solve2(mut lines: Vec<Vec<String>>) -> usize {
                 _ => Some(heap),
             }
         })
-        .map(|mut heap| {
+        .map(|heap| {
             heap.iter().rev().fold(0, |acc, brace| {
-                (acc * 5) + SCORES.get(OPEN_MATCHES.get(brace).unwrap()).unwrap()
+                (acc * 5) + get_second_part_score(get_close_brace_match(brace))
             })
         })
         .collect();

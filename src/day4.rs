@@ -1,8 +1,6 @@
 extern crate itertools;
 
 use self::itertools::Itertools;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -41,7 +39,7 @@ fn check_winner(marked: Vec<Vec<usize>>, content: Vec<Vec<String>>) -> Option<Ve
     let h_result = marked
         .iter()
         .enumerate()
-        .find(|(i, row)| row.iter().all(|&col| col == 1));
+        .find(|(_, row)| row.iter().all(|&col| col == 1));
 
     let v_result =
         (0..content[0].len()).find(|&i| &marked.iter().fold(0, |acc, row| acc + row[i]) == &max);
@@ -97,7 +95,7 @@ pub fn main() {
         })
         .collect::<Vec<Vec<String>>>();
     let seq = &grouped_lines[0][0].split(",").collect::<Vec<&str>>();
-    let mut boards = &mut grouped_lines[1..]
+    let boards = &mut grouped_lines[1..]
         .iter()
         .map(|b| {
             Board::new(
@@ -124,10 +122,9 @@ pub fn main() {
 fn solve1(seq: Vec<&str>, mut boards: Vec<Board>) -> usize {
     let mut result = 0;
     'outer: for num in seq.iter() {
-        let mut winners: Vec<usize> = Vec::new();
-        for (index, mut board) in boards.iter_mut().enumerate() {
+        for board in boards.iter_mut() {
             board.mark_number(num.to_string());
-            if let Some(winner) = board.check_winner() {
+            if let Some(_) = board.check_winner() {
                 let sum = board.sum_unmarked_nums();
                 result = sum * num.parse::<usize>().unwrap();
                 break 'outer;
@@ -140,11 +137,11 @@ fn solve1(seq: Vec<&str>, mut boards: Vec<Board>) -> usize {
 
 fn solve2(seq: Vec<&str>, mut boards: Vec<Board>) -> usize {
     let mut result = 0;
-    'outer: for num in seq.iter() {
+    for num in seq.iter() {
         let mut winners: Vec<usize> = Vec::new();
-        for (index, mut board) in boards.iter_mut().enumerate() {
+        for (index, board) in boards.iter_mut().enumerate() {
             board.mark_number(num.to_string());
-            if let Some(winner) = board.check_winner() {
+            if let Some(_) = board.check_winner() {
                 let sum = board.sum_unmarked_nums();
                 result = sum * num.parse::<usize>().unwrap();
                 winners.push(index);

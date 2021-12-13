@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -13,8 +11,8 @@ pub fn main() {
     println!("Answer 2 {}", answer2);
 }
 
-fn convert_to_decimal(bin: String) -> usize {
-    usize::from_str_radix(&bin, 2).unwrap()
+fn convert_to_decimal(bin: &str) -> usize {
+    usize::from_str_radix(bin, 2).unwrap()
 }
 
 fn solve1(lines: &Vec<String>) -> usize {
@@ -25,7 +23,7 @@ fn solve1(lines: &Vec<String>) -> usize {
             .iter()
             .enumerate()
             .for_each(|(i, l)| {
-                if (l != &"") {
+                if l != &"" {
                     count[i - 1] += l.parse::<usize>().unwrap();
                 }
             });
@@ -43,7 +41,7 @@ fn solve1(lines: &Vec<String>) -> usize {
             gamma.push_str("0");
         }
     }
-    convert_to_decimal(gamma.to_string()) * convert_to_decimal(epsilon.to_string())
+    convert_to_decimal(&gamma) * convert_to_decimal(&epsilon)
 }
 
 fn solve2(lines: &Vec<String>) -> usize {
@@ -93,8 +91,7 @@ fn solve2(lines: &Vec<String>) -> usize {
         index += 1;
     }
 
-    convert_to_decimal(temp_oxygen_rating[0].to_string())
-        * convert_to_decimal(temp_co2_rating[0].to_string())
+    convert_to_decimal(&temp_oxygen_rating[0]) * convert_to_decimal(&temp_co2_rating[0])
 }
 
 fn read_lines_as_str<P>(filename: P) -> Vec<String>
