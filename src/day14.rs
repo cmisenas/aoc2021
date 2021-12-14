@@ -32,36 +32,14 @@ pub fn main() {
 }
 
 fn solve1(template: &str, instructions: &HashMap<&str, &str>) -> usize {
-    let mut template_vec: Vec<String> = template
-        .chars()
-        .collect::<Vec<char>>()
-        .iter()
-        .map(|c| c.to_string())
-        .collect();
-    let mut temporary_vec = Vec::new();
-    let mut counts: HashMap<String, usize> = HashMap::new();
-
-    for _ in 0..10 {
-        temporary_vec = Vec::new();
-        for (i, element) in template_vec.iter().enumerate().skip(1) {
-            let mut pair = template_vec[i - 1].to_string();
-            pair.push_str(&element.to_string());
-            if let Some(instruction) = instructions.get(&pair.as_str()) {
-                temporary_vec.push(template_vec[i - 1].to_string());
-                temporary_vec.push(instruction.to_string());
-            }
-        }
-        temporary_vec.push(template_vec.last().unwrap().to_string());
-        template_vec = temporary_vec.clone();
-    }
-    for element in template_vec.iter() {
-        *counts.entry(element.to_string()).or_insert(0) += 1;
-    }
-    counts.iter().max_by(|a, b| a.1.cmp(b.1)).unwrap().1
-        - counts.iter().min_by(|a, b| a.1.cmp(b.1)).unwrap().1
+    solve(template, instructions, 10)
 }
 
 fn solve2(template: &str, instructions: &HashMap<&str, &str>) -> usize {
+    solve(template, instructions, 40)
+}
+
+fn solve(template: &str, instructions: &HashMap<&str, &str>, days: usize) -> usize {
     let mut template_vec: Vec<String> = template
         .chars()
         .collect::<Vec<char>>()
@@ -81,7 +59,7 @@ fn solve2(template: &str, instructions: &HashMap<&str, &str>) -> usize {
         *counts.entry(pair).or_insert(0) += 1;
     }
 
-    for day in 0..40 {
+    for day in 0..days {
         let mut to_increase: HashMap<String, usize> = HashMap::new();
         for (element, count) in counts.iter_mut() {
             if *count > 0 {
