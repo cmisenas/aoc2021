@@ -11,8 +11,9 @@ pub fn main() {
         .map(|c| parse_hex(c))
         .collect::<Vec<String>>()
         .join("");
-    let answer1 = solve1(&hexadecimal);
-    let answer2 = solve2(&hexadecimal);
+    let (_, versions, result) = solve(&hexadecimal);
+    let answer1: usize = versions.iter().sum();
+    let answer2: usize = result[0];
     println!("Day 16 answers");
     println!("Answer 1 {}", answer1);
     println!("Answer 2 {}", answer2);
@@ -56,18 +57,38 @@ fn parse_hex(code: char) -> String {
     }
 }
 
+fn get_type(bits: usize) -> PacketType {
+    match bits {
+        4 => PacketType::LITERAL,
+        0 => PacketType::SUM,
+        1 => PacketType::PRODUCT,
+        2 => PacketType::MINIMUM,
+        3 => PacketType::MAXIMUM,
+        5 => PacketType::GT,
+        6 => PacketType::LT,
+        7 => PacketType::EQUAL,
+        _ => PacketType::UNKNOWN,
+    }
+}
+
+fn convert_bin_to_number(bin_val: &str) -> usize {
+    usize::from_str_radix(bin_val, 2).unwrap()
+}
+
 fn parse_packet(
     hex_code: &String,
+    curr_type: PacketType,
     mut curr_index: usize,
     mut curr_op_length: usize,
     max_op_length: usize,
     mut curr_op_count: usize,
     max_op_count: usize,
-) -> (usize, Vec<usize>) {
+) -> (usize, Vec<usize>, Vec<usize>) {
     let mut curr_label = BitLabel::VERSION;
-    let mut curr_type = PacketType::UNKNOWN;
+    let mut subpacket_type = PacketType::UNKNOWN;
+    let mut operands: Vec<usize> = Vec::new();
+    let mut literal_val = 0;
     let mut versions: Vec<usize> = Vec::new();
-    println!("Hex code {}", hex_code);
 
     loop {
         let mut end_index = curr_index
@@ -76,62 +97,40 @@ fn parse_packet(
                 BitLabel::TYPE_ID => 3,
                 BitLabel::LITERAL_VALUE => {
                     let (end_pos, val) = find_end_of_literal_packet(hex_code, curr_index);
+                    literal_val = val;
                     end_pos - curr_index
                 }
                 BitLabel::OPERATOR_LENGTH_TYPE_ID => 1,
                 BitLabel::OPERATOR_LENGTH => 15,
                 BitLabel::OPERATOR_SUBPACKET_COUNT => 11,
-                _ => panic!("hey"),
+                _ => panic!("Invalid label {:?}", curr_label),
             };
-        if end_index >= hex_code.len() {
+
+        if end_index > hex_code.len() {
             break;
         }
 
-        let part = hex_code.get(curr_index..end_index).unwrap();
-        let parsed_part = usize::from_str_radix(part, 2).unwrap();
-        println!(
-            "Label {:?} Part {} Parsed {}\n",
-            curr_label, part, parsed_part
-        );
+        let parsed_part = convert_bin_to_number(hex_code.get(curr_index..end_index).unwrap());
 
         if max_op_length > 0 {
-            println!(
-                "Increase {} by {}",
-                curr_op_length,
-                (end_index - curr_index)
-            );
             curr_op_length += (end_index - curr_index);
         }
 
         match curr_label {
             BitLabel::VERSION => {
-                versions.push(parsed_part);
                 curr_label = BitLabel::TYPE_ID;
-                if max_op_count > 0 {
-                    curr_op_count += 1;
-                }
+                versions.push(parsed_part);
             }
             BitLabel::TYPE_ID => {
-                curr_type = match parsed_part {
-                    4 => PacketType::LITERAL,
-                    0 => PacketType::SUM,
-                    1 => PacketType::PRODUCT,
-                    2 => PacketType::MINIMUM,
-                    3 => PacketType::MAXIMUM,
-                    5 => PacketType::GT,
-                    6 => PacketType::LT,
-                    7 => PacketType::EQUAL,
-
-                    _ => PacketType::UNKNOWN,
-                };
-                match curr_type {
+                subpacket_type = get_type(parsed_part);
+                match subpacket_type {
                     PacketType::LITERAL => {
                         curr_label = BitLabel::LITERAL_VALUE;
                     }
+                    PacketType::UNKNOWN => panic!("asdf"),
                     _ => {
                         curr_label = BitLabel::OPERATOR_LENGTH_TYPE_ID;
                     }
-                    _ => panic!("asdf"),
                 }
             }
             BitLabel::OPERATOR_LENGTH_TYPE_ID => {
@@ -141,50 +140,91 @@ fn parse_packet(
                 };
             }
             BitLabel::OPERATOR_LENGTH => {
-                let (index, subpacket_versions) =
-                    parse_packet(hex_code, end_index, 0, parsed_part, 0, 0);
+                let (index, subpacket_versions, subpacket_operands) = parse_packet(
+                    hex_code,
+                    subpacket_type.clone(),
+                    end_index,
+                    0,
+                    parsed_part,
+                    0,
+                    0,
+                );
                 for version in subpacket_versions.iter() {
                     versions.push(*version);
+                }
+                operands.push(subpacket_operands[0]);
+                if max_op_count > 0 {
+                    curr_op_count += 1;
+                }
+                if max_op_length > 0 {
+                    curr_op_length += (index - end_index);
                 }
                 end_index = index;
                 curr_label = BitLabel::VERSION;
             }
             BitLabel::OPERATOR_SUBPACKET_COUNT => {
-                let (index, subpacket_versions) =
-                    parse_packet(hex_code, end_index, 0, 0, 0, parsed_part);
+                let (index, subpacket_versions, subpacket_operands) = parse_packet(
+                    hex_code,
+                    subpacket_type.clone(),
+                    end_index,
+                    0,
+                    0,
+                    0,
+                    parsed_part,
+                );
                 for version in subpacket_versions.iter() {
                     versions.push(*version);
+                }
+                operands.push(subpacket_operands[0]);
+                if max_op_count > 0 {
+                    curr_op_count += 1;
+                }
+                if max_op_length > 0 {
+                    curr_op_length += (index - end_index);
                 }
                 end_index = index;
                 curr_label = BitLabel::VERSION;
             }
             BitLabel::LITERAL_VALUE => {
-                println!("Current op length {}, {}", curr_op_length, max_op_length);
-                if max_op_length > 0 && curr_op_length == max_op_length {
-                    curr_index = end_index;
-                    break;
-                }
+                operands.push(literal_val);
 
-                println!("Current op count {}, {}", curr_op_length, max_op_length);
-                if max_op_count > 0 && curr_op_count == max_op_count {
-                    curr_index = end_index;
-                    break;
+                if max_op_count > 0 {
+                    curr_op_count += 1;
                 }
                 curr_label = BitLabel::VERSION;
             }
         };
 
-        if max_op_length > 0 || max_op_count > 0 {
-            println!(
-                "Max op len {}, curr op len {}, Max op ct {}, curr op ct {}",
-                max_op_length, curr_op_length, max_op_count, curr_op_count
-            );
-        }
-
         curr_index = end_index;
+        if (max_op_count > 0 && curr_op_count == max_op_count)
+            || (max_op_length > 0 && curr_op_length == max_op_length)
+        {
+            break;
+        }
     }
 
-    (curr_index, versions)
+    let result = match curr_type {
+        PacketType::SUM => operands.iter().sum::<usize>(),
+        PacketType::PRODUCT => operands.iter().product::<usize>(),
+        PacketType::MINIMUM => *operands.iter().min().unwrap(),
+        PacketType::MAXIMUM => *operands.iter().max().unwrap(),
+        PacketType::GT => match operands[0] > operands[1] {
+            true => 1,
+            _ => 0,
+        },
+        PacketType::LT => match operands[0] < operands[1] {
+            true => 1,
+            _ => 0,
+        },
+        PacketType::EQUAL => match operands[0] == operands[1] {
+            true => 1,
+            _ => 0,
+        },
+        _ => operands[0],
+    };
+
+    operands = vec![result];
+    (curr_index, versions, operands)
 }
 
 fn find_end_of_literal_packet(hex_code: &String, start: usize) -> (usize, usize) {
@@ -201,20 +241,10 @@ fn find_end_of_literal_packet(hex_code: &String, start: usize) -> (usize, usize)
         index += 5;
     }
 
-    (index, usize::from_str_radix(&bin_val, 2).unwrap())
+    (index, convert_bin_to_number(&bin_val))
 }
 
-fn parse_operator_packet() {
-    // Type ID
-    // - Any type ID value other than 4 - Operator packet
-    //   - packet version (3 bits)
-    //   - packet type ID (3 bits)
-    //   - length type ID
-    //      - 0 - next 15 bits = total length in bits of the sub-packets contained by this packet
-    //      - 1 - next 11 bits = number of sub-packets immediately contained by this packet
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum PacketType {
     LITERAL,
     SUM,
@@ -238,13 +268,8 @@ enum BitLabel {
     OPERATOR_SUBPACKET_COUNT,
 }
 
-fn solve1(hex_code: &String) -> usize {
-    let (_, versions) = parse_packet(hex_code, 0, 0, 0, 0, 0);
-    versions.iter().sum()
-}
-
-fn solve2(hex_code: &String) -> u32 {
-    0
+fn solve(hex_code: &String) -> (usize, Vec<usize>, Vec<usize>) {
+    parse_packet(hex_code, PacketType::UNKNOWN, 0, 0, 0, 0, 0)
 }
 
 fn read_lines_as_str<P>(filename: P) -> Vec<String>
