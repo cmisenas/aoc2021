@@ -40,12 +40,6 @@ fn solve2(template: &str, instructions: &HashMap<&str, &str>) -> usize {
 }
 
 fn solve(template: &str, instructions: &HashMap<&str, &str>, days: usize) -> usize {
-    let mut template_vec: Vec<String> = template
-        .chars()
-        .collect::<Vec<char>>()
-        .iter()
-        .map(|c| c.to_string())
-        .collect();
     let mut counts: HashMap<String, usize> = HashMap::new();
     let mut el_counts: HashMap<char, usize> = HashMap::new();
     // Last char will always be the same so make sure to add 1
@@ -53,9 +47,9 @@ fn solve(template: &str, instructions: &HashMap<&str, &str>, days: usize) -> usi
         .entry(template.chars().last().unwrap())
         .or_insert(1);
 
-    for (i, element) in template_vec.iter().enumerate().skip(1) {
-        let mut pair = template_vec[i - 1].to_string();
-        pair.push_str(&element.to_string());
+    for pairs in template.chars().collect::<Vec<char>>().windows(2) {
+        let mut pair = pairs[0].to_string();
+        pair.push_str(&pairs[1].to_string());
         *counts.entry(pair).or_insert(0) += 1;
     }
 
@@ -63,10 +57,9 @@ fn solve(template: &str, instructions: &HashMap<&str, &str>, days: usize) -> usi
         let mut to_increase: HashMap<String, usize> = HashMap::new();
         for (element, count) in counts.iter_mut() {
             if *count > 0 {
-                // Decrease this element's count
-                // Get the in between and form the new pair
+                // Get the in between element (x) for pair (ab)
+                // Form the new pairs (ax, xb) and increase the count by pair (ab) count
                 if let Some(in_between) = instructions.get(&element.as_str()) {
-                    // ax and xb and increase their count
                     let mut pair1 = element.chars().nth(0).unwrap().to_string();
                     pair1.push_str(in_between);
                     let mut pair2 = in_between.to_string();
@@ -74,6 +67,7 @@ fn solve(template: &str, instructions: &HashMap<&str, &str>, days: usize) -> usi
                     *to_increase.entry(pair1).or_insert(0) += *count;
                     *to_increase.entry(pair2).or_insert(0) += *count;
                 }
+                // Decrease this element's count
                 *count = 0;
             }
         }
@@ -87,8 +81,18 @@ fn solve(template: &str, instructions: &HashMap<&str, &str>, days: usize) -> usi
         *el_counts.entry(pair.chars().nth(0).unwrap()).or_insert(0) += count;
     }
 
-    el_counts.iter().max_by(|a, b| a.1.cmp(b.1)).unwrap().1
-        - el_counts.iter().min_by(|a, b| a.1.cmp(b.1)).unwrap().1
+    let mut max = 0;
+    let mut min = usize::MAX;
+    for (_, el_count) in el_counts.iter() {
+        if *el_count > max {
+            max = *el_count;
+        }
+        if *el_count < min {
+            min = *el_count;
+        }
+    }
+
+    max - min
 }
 
 fn read_lines_as_str<P>(filename: P) -> Vec<String>
