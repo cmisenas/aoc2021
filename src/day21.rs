@@ -59,5 +59,71 @@ fn solve1(mut player1_pos: usize, mut player2_pos: usize) -> usize {
 }
 
 fn solve2(player1_pos: usize, player2_pos: usize) -> usize {
+    // 3 * 3 * 3 = 27
+    let possible_rolls = vec![
+        vec![1, 1, 1], // 3
+        vec![1, 1, 2], // 4
+        vec![1, 1, 3], // 5
+        vec![1, 2, 1], // 4
+        vec![1, 2, 2], // 5
+        vec![1, 2, 3], // 6
+        vec![1, 3, 1], // 5
+        vec![1, 3, 2], // 6
+        vec![1, 3, 3], // 7
+        vec![2, 1, 1], // 4
+        vec![2, 1, 2], // 5
+        vec![2, 1, 3], // 6
+        vec![2, 2, 1], // 5
+        vec![2, 2, 2], // 6
+        vec![2, 2, 3], // 7
+        vec![2, 3, 1], // 6
+        vec![2, 3, 2], // 7
+        vec![2, 3, 3], // 8
+        vec![3, 1, 1], // 5
+        vec![3, 1, 2], // 6
+        vec![3, 1, 3], // 7
+        vec![3, 2, 1], // 6
+        vec![3, 2, 2], // 7
+        vec![3, 2, 3], // 8
+        vec![3, 3, 1], // 7
+        vec![3, 3, 2], // 8
+        vec![3, 3, 3], // 9
+    ];
+    let possible_rolls = vec![
+        vec![1, 1, 1], // 3
+        vec![1, 1, 2], // 4
+        vec![1, 2, 1], // 4
+        vec![2, 1, 1], // 4
+        vec![1, 1, 3], // 5
+        vec![1, 2, 2], // 5
+        vec![1, 3, 1], // 5
+        vec![2, 1, 2], // 5
+        vec![2, 2, 1], // 5
+        vec![3, 1, 1], // 5
+        vec![1, 2, 3], // 6
+        vec![1, 3, 2], // 6
+        vec![2, 1, 3], // 6
+        vec![2, 2, 2], // 6
+        vec![2, 3, 1], // 6
+        vec![3, 1, 2], // 6
+        vec![3, 2, 1], // 6
+        vec![1, 3, 3], // 7
+        vec![2, 2, 3], // 7
+        vec![2, 3, 2], // 7
+        vec![3, 1, 3], // 7
+        vec![3, 2, 2], // 7
+        vec![3, 3, 1], // 7
+        vec![2, 3, 3], // 8
+        vec![3, 2, 3], // 8
+        vec![3, 3, 2], // 8
+        vec![3, 3, 3], // 9
+    ];
+
+    // Keep track of
+    // - player 1 pos
+    // - player 2 pos
+    // By keeping track of
+    // - how many multiverses have pos of x (1 - 10)
+    // -
     0
 }
