@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -22,59 +23,52 @@ pub fn main() {
 }
 
 fn solve1(grid: &[Vec<usize>]) -> usize {
-    // Assuming you can only go right or bottom
-    let curr = (0, 0);
-    let end = (grid.len() - 1, grid[0].len() - 1);
-
-    println!("Start is {}", grid[curr.0][curr.1]);
-    println!("End is {}", grid[end.0][end.1]);
-    calc_path(grid)
+    dijkstra(grid, grid[0].len(), grid.len())
 }
 
-fn solve2(lines: &[Vec<usize>]) -> usize {
-    0
+fn solve2(grid: &[Vec<usize>]) -> usize {
+    dijkstra(grid, grid[0].len() * 5, grid.len() * 5)
 }
 
-fn calc_path(grid: &[Vec<usize>]) -> usize {
+fn dijkstra(grid: &[Vec<usize>], width: usize, height: usize) -> usize {
     let mut dist: HashMap<(usize, usize), usize> = HashMap::new();
-    let mut prev: HashMap<(usize, usize), (usize, usize)> = HashMap::new();
-    let mut unvisited: HashMap<(usize, usize), usize> = HashMap::new();
-    for (i, row) in grid.iter().enumerate() {
-        for (j, col) in row.iter().enumerate() {
-            dist.insert((j, i), usize::MAX);
-            prev.insert((j, i), (usize::MAX, usize::MAX));
-            unvisited.insert((j, i), *col);
-        }
-    }
+    let mut visited: HashSet<(usize, usize)> = HashSet::new();
+
     let curr = (0, 0);
-    let width = grid[0].len();
-    let height = grid.len();
     let target = (width - 1, height - 1);
 
-    dist.entry(curr).and_modify(|d| *d = 0);
-    prev.entry(curr).and_modify(|p| *p = (0, 0));
+    dist.insert(curr, 0);
 
-    while unvisited.len() > 0 {
-        // Get the vertex in unvisited that has min dist
-        let dist_copy = dist.clone();
-        let (u, dist_u) = dist_copy
+    loop {
+        println!("{:?}", visited.len());
+        // Get the vertex in visited that has min dist
+        let (u, dist_u) = dist
             .iter()
-            .filter(|(key, _)| unvisited.contains_key(key))
+            .filter_map(|(key, val)| {
+                if !visited.contains(key) {
+                    Some((*key, *val))
+                } else {
+                    None
+                }
+            })
             .min_by(|(_, x), (_, y)| x.cmp(y))
             .unwrap();
-        // Remove that vertex in unvisited
-        unvisited.remove(u);
+        // Remove that vertex in visited
+        visited.insert(u);
+        if u.1 == target.1 && u.0 == target.0 {
+            break;
+        }
 
         // Get neighbors of vertex
-        let neighbors = get_neighbors(*u, width, height);
+        let neighbors = get_neighbors(u, width, height);
         for v in neighbors.iter() {
             // Calculate the length of distance between neighbor and vertex
-            let alt = *dist_u + grid[v.1][v.0];
+            let alt = dist_u + get_grid_val(grid, v.0, v.1, width, height);
+            dist.entry(*v).or_insert(alt);
             let v_dist = dist.get(v).unwrap();
 
             if alt < *v_dist {
                 dist.entry(*v).and_modify(|d| *d = alt);
-                prev.entry(*v).and_modify(|p| *p = *u);
             }
         }
     }
@@ -82,14 +76,17 @@ fn calc_path(grid: &[Vec<usize>]) -> usize {
     *dist.get(&target).unwrap()
 }
 
-fn enlarge(grid: &[Vec<usize>]) -> &[Vec<usize>] {
-    let enlarged_grid = grid.clone();
-    enlarged_grid
-}
+fn get_grid_val(grid: &[Vec<usize>], x: usize, y: usize, width: usize, height: usize) -> usize {
+    let distance =
+        (x as f32 / width as f32).floor() as usize + (y as f32 / height as f32).floor() as usize;
+    let true_x = x % width;
+    let true_y = y % height;
 
-fn get_paths_score(path: &Vec<(usize, usize)>, grid: &[Vec<usize>]) -> usize {
-    path.iter()
-        .fold(0, |acc, coord| acc + grid[coord.1][coord.0])
+    if ((grid[true_y][true_x] + distance) % 9) == 0 {
+        9
+    } else {
+        (grid[true_y][true_x] + distance) % 9
+    }
 }
 
 fn get_neighbors(point: (usize, usize), width: usize, height: usize) -> Vec<(usize, usize)> {
