@@ -15,10 +15,9 @@ pub fn main() {
         })
         .collect();
     let answer1 = solve1(&grid);
+    let answer2 = solve2(&grid);
     println!("Day 15 answers");
     println!("Answer 1 {}", answer1);
-
-    let answer2 = solve2(&grid);
     println!("Answer 2 {}", answer2);
 }
 
@@ -27,12 +26,14 @@ fn solve1(grid: &[Vec<usize>]) -> usize {
 }
 
 fn solve2(grid: &[Vec<usize>]) -> usize {
-    dijkstra(grid, grid[0].len() * 5, grid.len() * 5)
+    a_star(grid, grid[0].len() * 5, grid.len() * 5)
 }
 
 fn dijkstra(grid: &[Vec<usize>], width: usize, height: usize) -> usize {
     let mut dist: HashMap<(usize, usize), usize> = HashMap::new();
     let mut visited: HashSet<(usize, usize)> = HashSet::new();
+    let true_width = grid[0].len();
+    let true_height = grid[0].len();
 
     let curr = (0, 0);
     let target = (width - 1, height - 1);
@@ -40,7 +41,6 @@ fn dijkstra(grid: &[Vec<usize>], width: usize, height: usize) -> usize {
     dist.insert(curr, 0);
 
     loop {
-        println!("{:?}", visited.len());
         // Get the vertex in visited that has min dist
         let (u, dist_u) = dist
             .iter()
@@ -63,7 +63,7 @@ fn dijkstra(grid: &[Vec<usize>], width: usize, height: usize) -> usize {
         let neighbors = get_neighbors(u, width, height);
         for v in neighbors.iter() {
             // Calculate the length of distance between neighbor and vertex
-            let alt = dist_u + get_grid_val(grid, v.0, v.1, width, height);
+            let alt = dist_u + get_grid_val(grid, v.0, v.1, true_width, true_height);
             dist.entry(*v).or_insert(alt);
             let v_dist = dist.get(v).unwrap();
 
@@ -74,6 +74,91 @@ fn dijkstra(grid: &[Vec<usize>], width: usize, height: usize) -> usize {
     }
 
     *dist.get(&target).unwrap()
+}
+
+fn a_star(grid: &[Vec<usize>], width: usize, height: usize) -> usize {
+    let mut to_explore: HashSet<(usize, usize)> = HashSet::new();
+    let start = (0, 0);
+    let target = (width - 1, height - 1);
+    let true_width = grid[0].len();
+    let true_height = grid[0].len();
+
+    // Set start as to_explore
+    to_explore.insert((0, 0));
+
+    // For node n, prev[n] stores the node immediately preceding it
+    // on the cheapest path from start to n currently known
+    let mut prev: HashMap<(usize, usize), (usize, usize)> = HashMap::new();
+
+    // For node n, g_score[n] is the cost of the cheapest path from
+    // start to n currently known
+    let mut g_score: HashMap<(usize, usize), usize> = HashMap::new();
+    g_score.insert(start, 0);
+
+    // For node n, f_score[n] is the current best guess as to how
+    // cheap a path could be from start to finish if it goes through n
+    // f_score[n] = g_score[n] + heuristic(n)
+    let mut f_score: HashMap<(usize, usize), usize> = HashMap::new();
+    f_score.insert(start, manhattan_d(start, target));
+
+    let mut final_score = 0;
+
+    while to_explore.len() > 0 {
+        // Set current to the node in to_explore having the lowest f_score[] value
+        // TODO: Use min-heap or a priority queue which can occur in O(Log(N))
+        let mut current = to_explore
+            .iter()
+            .min_by(|x, y| f_score.get(x).unwrap().cmp(f_score.get(y).unwrap()))
+            .unwrap()
+            .clone();
+
+        // Terminate if current is equal to goal and add path value
+        if current.0 == target.0 && current.1 == target.1 {
+            final_score = get_grid_val(grid, current.0, current.1, true_width, true_height);
+            while let Some(curr) = prev.get(&current) {
+                if *curr != start {
+                    final_score =
+                        final_score + get_grid_val(grid, curr.0, curr.1, true_width, true_height);
+                }
+                current = *curr;
+            }
+            break;
+        }
+
+        // Remove current from to_explore
+        to_explore.remove(&current);
+
+        // Get all neighbors of current
+        let neighbors = get_neighbors(current, width, height);
+        for n in neighbors.iter() {
+            // tentative_g_score is the distance from start to the neighbor through current
+            let tentative_g = g_score.get(&current).unwrap()
+                + get_grid_val(grid, n.0, n.1, true_width, true_height);
+            if !g_score.contains_key(&n) || tentative_g < *g_score.get(&n).unwrap() {
+                prev.entry(*n)
+                    .and_modify(|p| *p = current)
+                    .or_insert(current);
+                g_score
+                    .entry(*n)
+                    .and_modify(|g| *g = tentative_g)
+                    .or_insert(tentative_g);
+                f_score
+                    .entry(*n)
+                    .and_modify(|f| *f = tentative_g + manhattan_d(*n, target))
+                    .or_insert(tentative_g + manhattan_d(*n, target));
+
+                if !to_explore.contains(n) {
+                    to_explore.insert(*n);
+                }
+            }
+        }
+    }
+
+    final_score
+}
+
+fn manhattan_d(coord: (usize, usize), target: (usize, usize)) -> usize {
+    (target.0 - coord.0) + (target.1 + coord.1)
 }
 
 fn get_grid_val(grid: &[Vec<usize>], x: usize, y: usize, width: usize, height: usize) -> usize {
