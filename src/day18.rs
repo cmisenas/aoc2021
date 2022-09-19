@@ -10,7 +10,10 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 pub fn main() {
-    let lines = read_lines_as_str("./day18.input");
+    let lines = read_lines_as_str("./day18.input")
+        .into_iter()
+        .map(|line| parse_snailfish_num(line))
+        .collect::<Vec<Vec<String>>>();
     let answer1 = solve1(&lines);
     println!("Day 18 answers");
     println!("Answer 1 {}", answer1);
@@ -34,199 +37,209 @@ fn parse_snailfish_num(num: String) -> Vec<String> {
             }
         }
     }
-    println!("{:?}", tokens);
-    Vec::new()
+    tokens
 }
 
-fn solve1(lines: &[String]) -> u32 {
-    let mut sum = lines[0].to_string();
-    println!("{:?}", parse_snailfish_num(sum.to_string()));
+fn solve1(lines: &[Vec<String>]) -> u32 {
+    let mut sum = lines[0].to_vec();
 
     for x in (1..lines.len()) {
-        let mut operand = lines[x].to_string();
-        loop {
-            if can_be_exploded(sum.to_string()) {
-                sum = snailfish_reduce(sum);
-            } else {
-                break;
-            }
-        }
-        loop {
-            if can_be_exploded(operand.to_string()) {
-                operand = snailfish_reduce(operand.to_string());
-            } else {
-                break;
-            }
-        }
-        println!("Adding {} and {}", sum, operand);
-        sum = snailfish_add(sum.to_string(), operand.to_string());
-        println!("{:?}", sum);
+        let mut operand = lines[x].to_vec();
+        sum = snailfish_reduce(sum);
+        operand = snailfish_reduce(operand);
+        sum = snailfish_add(sum, operand);
     }
-    loop {
-        if can_be_exploded(sum.to_string()) {
-            sum = snailfish_reduce(sum);
-        } else {
-            break;
-        }
-    }
-    println!("{:?}", sum);
-    //println!("{:?}", snailfish_reduce(sum));
-    //println!("{:?}", snailfish_reduce(snailfish_reduce(sum)));
-    0
+    sum = calculate_magnitude(snailfish_reduce(sum));
+
+    sum.iter().nth(0).unwrap().parse::<u32>().unwrap()
 }
 
 //fn solve2(lines: &[u32]) -> u32 {
 //    0
 //}
-fn can_be_exploded(num: String) -> bool {
+
+fn can_be_exploded(num: Vec<String>) -> bool {
     let mut level = 0;
-
-    for c in num.chars() {
-        if level == 5 {
-            break;
-        }
-
-        if c == '[' {
+    num.iter().any(|c| {
+        if c == "[" {
             level = level + 1;
-        } else if c == ']' {
+        } else if c == "]" {
             level = level - 1;
         }
-    }
-
-    level == 5
+        level == 5
+    })
 }
 
-fn snailfish_reduce(num: String) -> String {
-    // Loop through the string
-    // Keep track of the number of opening braces
-    // When you hit a closing brace, reduce the openin brace count
-    // When you hit 5 opening braces,
-    //   Explode the leftmost pair
-    //      Using the index, explode the leftmost number by decrementing
-    //      Using the index, explode the rightmost number by incrementing
-    //      Add a 0 to the current place
+fn can_be_split(num: Vec<String>) -> bool {
+    num.iter()
+        .any(|c| is_num(c) && c.parse::<u8>().unwrap() > 9)
+}
+
+fn snailfish_reduce(num: Vec<String>) -> Vec<String> {
     let mut level = 0;
-    let mut reduced_num = "".to_string();
-    for (i, c) in num.char_indices() {
-        if level == 5 {
-            reduced_num = snailfish_explode(num.to_string(), c, i);
-            loop {
-                if can_be_exploded(reduced_num.to_string()) {
-                    reduced_num = snailfish_explode(reduced_num.to_string(), c, i);
-                } else {
-                    break;
-                }
-            }
-            println!("Reduced {}", reduced_num);
-            reduced_num = snailfish_split(reduced_num);
-            println!("Split {}", reduced_num);
+    let mut reduced_num = num.to_vec();
+    loop {
+        if !can_be_exploded(reduced_num.to_vec()) && !can_be_split(reduced_num.to_vec()) {
             break;
         }
-        reduced_num.push(c);
-
-        if c == '[' {
-            level = level + 1;
-        } else if c == ']' {
-            level = level - 1;
-        }
+        reduced_num = snailfish_explode(reduced_num);
+        reduced_num = snailfish_split(reduced_num);
     }
+
     reduced_num
 }
 
-fn snailfish_explode(num: String, c: char, i: usize) -> String {
-    let mut new_num = "".to_string();
+fn snailfish_explode(num: Vec<String>) -> Vec<String> {
+    if !can_be_exploded(num.to_vec()) {
+        return num;
+    }
+
+    let mut i = 0;
+    let mut c = "".to_string();
+    let mut level = 0;
+
+    for (temp_i, temp_c) in num.clone().iter().enumerate() {
+        if level == 5 {
+            i = temp_i;
+            c = temp_c.to_string();
+            break;
+        }
+
+        if temp_c == "[" {
+            level = level + 1;
+        } else if temp_c == "]" {
+            level = level - 1;
+        }
+    }
+
+    let mut new_num: Vec<String> = Vec::new();
     let mut found_open = false;
     let mut found_close = false;
     let mut found_left = false;
     let mut found_right = false;
-    // println!("Found it at {}, inv {}", i, num.len() - i - 1);
 
     // Form the head part
-    let left_num = c;
-    // println!("Left num {}", left_num);
-    for h in num.chars().rev().skip(num.len() - i) {
-        // println!("Looking at head {}", h);
-        if !found_open && h == '[' {
+    let left_num = c.to_string();
+    for h in num.iter().rev().skip(num.len() - i) {
+        if !found_open && h == "[" {
             // Remove one level of nesting
-            // println!("Remove here");
             found_open = true;
-        } else if h != '[' && h != ']' && h != ',' && !found_left {
-            let sum = c.to_digit(10).unwrap() + h.to_digit(10).unwrap();
-            new_num.push_str(&sum.to_string().chars().rev().collect::<String>());
+        } else if is_num(h) && !found_left {
+            let sum = c.parse::<u8>().unwrap() + h.parse::<u8>().unwrap();
+            new_num.push(sum.to_string());
             found_left = true;
-            // println!("Add {} to {} = {}", c, h, sum);
         } else {
-            new_num.push(h);
+            new_num.push(h.to_string());
         }
     }
     // Make sure to reverse left part
-    new_num = new_num.chars().rev().collect::<String>();
-    // println!("Left part {}", new_num);
+    new_num = new_num
+        .iter()
+        .rev()
+        .map(|l| l.to_string())
+        .collect::<Vec<String>>();
 
     // Add 0
-    new_num.push('0');
+    new_num.push("0".to_string());
 
     // Form the tail part
-    let right_num = num.chars().nth(i + 2).unwrap();
-    println!("num {}", num);
-    println!("left num {} right num {}", left_num, right_num);
-    println!("left i {} right i {}", i, i + 2);
-    // println!("Right num {}", right_num);
-    for t in num.chars().skip(i + 3) {
-        // println!("Looking at tail {}", t);
-        if !found_close && t == ']' {
+    let right_num = num.iter().nth(i + 2).unwrap();
+    for t in num.iter().skip(i + 3) {
+        if !found_close && t == "]" {
             // Remove one level of nesting
-            // println!("Remove here");
             found_close = true;
-        } else if t != '[' && t != ']' && t != ',' && !found_right {
-            println!("{} and {}", right_num, t);
-            let sum = right_num.to_digit(10).unwrap() + t.to_digit(10).unwrap();
-            new_num.push_str(&sum.to_string());
+        } else if is_num(t) && !found_right {
+            let sum = right_num.parse::<u8>().unwrap() + t.parse::<u8>().unwrap();
+            new_num.push(sum.to_string());
             found_right = true;
-            // println!("Add {} to {} = {}", c, t, sum);
         } else {
-            new_num.push(t);
+            new_num.push(t.to_string());
         }
     }
-    new_num
+
+    snailfish_explode(new_num)
 }
 
-fn snailfish_split(num: String) -> String {
-    let mut new_num = "".to_string();
+fn snailfish_split(num: Vec<String>) -> Vec<String> {
+    if !can_be_split(num.to_vec()) {
+        return num;
+    }
+    let mut new_num = Vec::new();
     let mut already_split = false;
-    for c in num.chars() {
-        if c != '[' && c != ']' && c != ',' && !already_split {
-            let n = c.to_digit(10).unwrap();
+    for c in num.iter() {
+        if c != "[" && c != "]" && c != "," && !already_split {
+            let n = c.parse::<u8>().unwrap();
             if n > 9 {
-                new_num.push('[');
-                new_num.push_str(&((n as f32 / 2.0).floor()).to_string());
-                new_num.push(',');
-                new_num.push_str(&((n as f32 / 2.0).ceil()).to_string());
-                new_num.push(']');
+                new_num.push("[".to_string());
+                new_num.push(((n as f32 / 2.0).floor()).to_string());
+                new_num.push(",".to_string());
+                new_num.push(((n as f32 / 2.0).ceil()).to_string());
+                new_num.push("]".to_string());
                 already_split = true;
             } else {
-                new_num.push(c);
+                new_num.push(c.to_string());
             }
         } else {
-            new_num.push(c);
+            new_num.push(c.to_string());
+        }
+    }
+    new_num = snailfish_explode(new_num);
+
+    snailfish_split(new_num)
+}
+
+fn snailfish_add(num_a: Vec<String>, num_b: Vec<String>) -> Vec<String> {
+    vec![
+        vec!["[".to_string()],
+        num_a.to_vec(),
+        vec![",".to_string()],
+        num_b.to_vec(),
+        vec!["]".to_string()],
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+fn calculate_magnitude(snailfish_number: Vec<String>) -> Vec<String> {
+    if snailfish_number.len() == 1 {
+        return snailfish_number;
+    }
+
+    let mut reduced_num: Vec<String> = Vec::new();
+    let max = snailfish_number.len();
+    let mut i = 0;
+    let default_val = "No more els".to_string();
+
+    loop {
+        if i >= max {
+            break;
+        }
+
+        let open_paren = snailfish_number.iter().nth(i).unwrap();
+        let num_a = snailfish_number.iter().nth(i + 1).unwrap_or(&default_val);
+        let comma = snailfish_number.iter().nth(i + 2).unwrap_or(&default_val);
+        let num_b = snailfish_number.iter().nth(i + 3).unwrap_or(&default_val);
+        let close_paren = snailfish_number.iter().nth(i + 4).unwrap_or(&default_val);
+
+        if open_paren == "[" && is_num(num_a) && comma == "," && is_num(num_b) && close_paren == "]"
+        {
+            let magnitude =
+                (num_a.parse::<usize>().unwrap() * 3) + (num_b.parse::<usize>().unwrap() * 2);
+            reduced_num.push(magnitude.to_string());
+
+            i = i + 5;
+        } else {
+            reduced_num.push(open_paren.to_string());
+            i = i + 1;
         }
     }
 
-    new_num
+    calculate_magnitude(reduced_num)
 }
 
-fn snailfish_add(num_a: String, num_b: String) -> String {
-    let mut sum = "[".to_string();
-    sum.push_str(&num_a);
-    sum.push_str(",");
-    sum.push_str(&num_b);
-    sum.push_str("]");
-
-    sum.to_string()
-}
-
-fn calculate_magnitude(snailfish_number: String) -> usize {
-    0
+fn is_num(c: &String) -> bool {
+    c != "[" && c != "]" && c != ","
 }
 
 fn read_lines_as_str<P>(filename: P) -> Vec<String>
