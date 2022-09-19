@@ -17,8 +17,8 @@ pub fn main() {
     let answer1 = solve1(&lines);
     println!("Day 18 answers");
     println!("Answer 1 {}", answer1);
-    //let answer2 = solve2(&lines);
-    //println!("Answer 2 {}", answer2);
+    let answer2 = solve2(&lines);
+    println!("Answer 2 {}", answer2);
 }
 
 fn parse_snailfish_num(num: String) -> Vec<String> {
@@ -54,9 +54,39 @@ fn solve1(lines: &[Vec<String>]) -> u32 {
     sum.iter().nth(0).unwrap().parse::<u32>().unwrap()
 }
 
-//fn solve2(lines: &[u32]) -> u32 {
-//    0
-//}
+fn solve2(lines: &[Vec<String>]) -> u32 {
+    let mut highest_sum = 0;
+
+    for (i, x) in lines.iter().enumerate() {
+        for (j, y) in lines.iter().skip(i).enumerate() {
+            if i == j {
+                continue;
+            }
+            let mut sum1 =
+                calculate_magnitude(snailfish_reduce(snailfish_add(x.to_vec(), y.to_vec())))
+                    .iter()
+                    .nth(0)
+                    .unwrap()
+                    .parse::<u32>()
+                    .unwrap();
+            let mut sum2 =
+                calculate_magnitude(snailfish_reduce(snailfish_add(y.to_vec(), x.to_vec())))
+                    .iter()
+                    .nth(0)
+                    .unwrap()
+                    .parse::<u32>()
+                    .unwrap();
+            if sum1 > highest_sum {
+                highest_sum = sum1;
+            }
+            if sum2 > highest_sum {
+                highest_sum = sum2;
+            }
+        }
+    }
+
+    highest_sum
+}
 
 fn can_be_exploded(num: Vec<String>) -> bool {
     let mut level = 0;
